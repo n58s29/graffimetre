@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0c0c0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>GraffitiMètre</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiR3JhZmZpdGlNw6h0cmUiLCJzaG9ydF9uYW1lIjoiR3JhZmZpdGlNw6h0cmUiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBjMGMwZiIsInRoZW1lX2NvbG9yIjoiIzBjMGMwZiJ9">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+:root{
+  --bg:#0c0c0f;
+  --bg2:#141418;
+  --bg3:#1c1c22;
+  --surface:#1e1e26;
+  --surface2:#26262f;
+  --surface3:#2e2e38;
+  --border:rgba(255,255,255,0.06);
+  --border2:rgba(255,255,255,0.1);
+  --accent:#ff5c35;
+  --accent-dim:rgba(255,92,53,0.12);
+  --green:#22c55e;
+  --green-dim:rgba(34,197,94,0.12);
+  --amber:#f59e0b;
+  --amber-dim:rgba(245,158,11,0.12);
+  --blue:#3b82f6;
+  --blue-dim:rgba(59,130,246,0.12);
+  --red:#ef4444;
+  --red-dim:rgba(239,68,68,0.12);
+  --text:#eae8f0;
+  --text2:#9d9bab;
+  --text3:#5e5c6e;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'DM Sans',sans-serif;
+  --radius:14px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans)}
+
+#app{height:100%;display:flex;flex-direction:column;padding-top:var(--safe-top);padding-bottom:var(--safe-bottom)}
+
+/* ─── HEADER ─── */
+.header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:8px}
+.header-title{font-size:17px;font-weight:800;letter-spacing:-.3px}
+.header-title span{color:var(--accent)}
+.header-badge{font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--surface);padding:2px 7px;border-radius:6px;letter-spacing:.5px}
+.header-actions{display:flex;gap:6px}
+
+.icon-btn{width:38px;height:38px;border:none;background:var(--surface);color:var(--text2);border-radius:10px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.icon-btn:active{transform:scale(.9);background:var(--surface2)}
+.icon-btn.danger{color:var(--red)}
+
+/* ─── MAIN ─── */
+.main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:14px}
+.main::-webkit-scrollbar{width:3px}
+.main::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+
+/* ─── VIEWS ─── */
+.view{display:none;height:100%;flex-direction:column}
+.view.active{display:flex}
+
+/* ─── EMPTY ─── */
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px;gap:14px}
+.empty-icon{font-size:52px;opacity:.2;filter:grayscale(1)}
+.empty h2{font-size:20px;font-weight:700;color:var(--text2)}
+.empty p{font-size:13px;color:var(--text3);max-width:260px;line-height:1.6}
+
+/* ─── CARDS ─── */
+.card-list{display:flex;flex-direction:column;gap:10px;padding-bottom:100px}
+
+.rcard{background:var(--surface);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:transform .15s;border:1px solid var(--border)}
+.rcard:active{transform:scale(.98)}
+
+.rcard-img{width:100%;height:160px;object-fit:cover;display:block}
+
+.rcard-body{padding:12px 14px}
+.rcard-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.rcard-date{font-family:var(--mono);font-size:11px;color:var(--text3)}
+
+.badge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.badge-cat{background:var(--blue-dim);color:var(--blue)}
+.badge-ok{background:var(--green-dim);color:var(--green)}
+.badge-wait{background:var(--amber-dim);color:var(--amber)}
+
+.rcard-cost{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);margin:4px 0}
+.rcard-notes{font-size:13px;color:var(--text2);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rcard-loc{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:6px;display:flex;align-items:center;gap:4px}
+.rcard-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+
+/* ─── FAB ─── */
+.fab{position:fixed;bottom:calc(20px + var(--safe-bottom));right:16px;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:26px;cursor:pointer;box-shadow:0 4px 24px rgba(255,92,53,.35);display:flex;align-items:center;justify-content:center;transition:all .15s;z-index:200}
+.fab:active{transform:scale(.88)}
+
+/* ─── NEW REPORT ─── */
+.capture-zone{background:var(--surface);border-radius:var(--radius);min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:2px dashed var(--border2);transition:border-color .3s;overflow:hidden;position:relative}
+.capture-zone:active{border-color:var(--accent)}
+.capture-zone.has-photo{border:none}
+.capture-zone img{width:100%;max-height:380px;object-fit:contain;display:block}
+.capture-ph{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--text3)}
+.capture-ph .ci{font-size:40px}
+.capture-ph span{font-size:13px;font-weight:500}
+.retake{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);color:#fff;border:none;padding:5px 10px;border-radius:8px;font-size:11px;font-family:var(--sans);cursor:pointer}
+
+.form-section{margin-top:14px;display:flex;flex-direction:column;gap:12px;padding-bottom:100px}
+
+.form-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:4px}
+
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+.cat-btn{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;transition:all .15s;font-family:var(--sans);color:var(--text2);font-size:12px;font-weight:600}
+.cat-btn .cat-icon{font-size:22px;display:block;margin-bottom:4px}
+.cat-btn .cat-price{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px}
+.cat-btn.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--text)}
+.cat-btn:active{transform:scale(.95)}
+
+.gps-bar{background:var(--surface);border-radius:10px;padding:12px;font-family:var(--mono);font-size:12px;color:var(--green);display:flex;align-items:center;gap:8px}
+.gps-bar.err{color:var(--amber)}
+
+textarea{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-family:var(--sans);font-size:14px;resize:none;min-height:80px;outline:none;transition:border-color .2s;width:100%}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--text3)}
+
+.action-row{display:flex;gap:8px;margin-top:6px}
+
+.btn{flex:1;padding:13px;border:none;border-radius:10px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.35;pointer-events:none}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-secondary{background:var(--surface2);color:var(--text)}
+.btn-green{background:var(--green);color:#fff}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.btn-danger-outline{background:transparent;border:1px solid var(--red-dim);color:var(--red)}
+
+/* ─── DETAIL ─── */
+.d-photo{width:calc(100% + 28px);margin:-14px -14px 0;max-height:320px;object-fit:cover;display:block}
+
+.d-section{margin-top:18px}
+.d-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.d-block{background:var(--surface);border-radius:var(--radius);padding:14px;font-size:13px;line-height:1.7;color:var(--text2);white-space:pre-wrap}
+.d-mono{font-family:var(--mono);font-size:12px}
+.d-analysis{border-left:3px solid var(--green);background:var(--surface);border-radius:0 var(--radius) var(--radius) 0;padding:14px;font-size:13px;line-height:1.7;color:var(--text)}
+.d-cost-big{font-family:var(--mono);font-size:32px;font-weight:700;color:var(--accent);margin:8px 0}
+.d-actions{display:flex;gap:8px;margin-top:18px;padding-bottom:30px}
+
+/* ─── SETTINGS ─── */
+.s-card{background:var(--surface);border-radius:var(--radius);padding:18px;margin-bottom:12px;border:1px solid var(--border)}
+.s-card h3{font-size:15px;font-weight:700;margin-bottom:3px}
+.s-card p{font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.4}
+.s-card.danger{border-color:var(--red-dim)}
+.s-card.danger h3{color:var(--red)}
+
+input[type="password"],input[type="text"],input[type="number"]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;transition:border-color .2s}
+input:focus{border-color:var(--accent)}
+input::placeholder{color:var(--text3)}
+
+.cat-editor{display:flex;flex-direction:column;gap:8px}
+.cat-row{display:flex;gap:8px;align-items:center}
+.cat-row input{flex:1}
+.cat-row .cat-price-input{width:80px;flex:none}
+.cat-row .cat-icon-input{width:50px;flex:none;text-align:center}
+.cat-row .cat-del{width:34px;height:34px;flex:none;border:none;background:var(--red-dim);color:var(--red);border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.cat-add-btn{background:var(--surface2);border:1px dashed var(--border2);border-radius:8px;padding:10px;color:var(--text3);font-family:var(--sans);font-size:13px;cursor:pointer;text-align:center}
+
+.privacy-bar{background:var(--green-dim);border:1px solid rgba(34,197,94,.15);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--green);line-height:1.5;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px}
+
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.stat{background:var(--bg);border-radius:10px;padding:14px 10px;text-align:center}
+.stat-v{font-size:24px;font-weight:800;color:var(--accent)}
+.stat-l{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px}
+
+/* ─── OVERLAYS ─── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(12,12,15,.93);z-index:500;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.overlay.active{display:flex}
+
+.spinner{width:44px;height:44px;border:3px solid var(--surface2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-text{font-size:14px;color:var(--text2);text-align:center;max-width:240px}
+
+.toast{position:fixed;bottom:calc(90px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);color:var(--text);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:600;opacity:0;transition:all .25s ease;pointer-events:none;white-space:nowrap;border:1px solid var(--border)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.confirm-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:700;align-items:center;justify-content:center;padding:20px}
+.confirm-ov.active{display:flex}
+.confirm-box{background:var(--bg2);border-radius:var(--radius);padding:22px;max-width:300px;width:100%;text-align:center;border:1px solid var(--border)}
+.confirm-box h3{font-size:17px;margin-bottom:8px}
+.confirm-box p{font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.5}
+.confirm-acts{display:flex;gap:8px}
+.confirm-acts .btn{padding:11px;font-size:13px}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══ LIST ═══ -->
+<div id="view-list" class="view active">
+  <div class="header">
+    <div class="header-left">
+      <div class="header-title">Graffiti<span>Mètre</span></div>
+      <div class="header-badge">v2.0</div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="exportData()" title="Export">&#x2913;</button>
+      <button class="icon-btn" onclick="showView('settings')" title="Réglages">&#x2699;</button>
+    </div>
+  </div>
+  <div class="main">
+    <div id="report-list" class="card-list"></div>
+    <div id="empty-state" class="empty">
+      <div class="empty-icon">&#x25A9;</div>
+      <h2>Aucun signalement</h2>
+      <p>Appuie sur + pour documenter un graffiti. Photo, GPS, catégorie et analyse IA avec chiffrage.</p>
+    </div>
+  </div>
+  <button class="fab" onclick="newReport()">+</button>
+</div>
+
+<!-- ═══ NEW ═══ -->
+<div id="view-new" class="view">
+  <div class="header">
+    <button class="icon-btn" onclick="cancelNew()">&#x2190;</button>
+    <div class="header-title">Nouveau</div>
+    <div style="width:38px"></div>
+  </div>
+  <div class="main">
+    <div class="capture-zone" id="capture-zone" onclick="triggerCam()">
+      <div class="capture-ph" id="capture-ph">
+        <div class="ci">&#x1F4F7;</div>
+        <span>Prendre une photo</span>
+      </div>
+    </div>
+    <input type="file" id="cam-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+
+    <div class="form-section">
+      <div>
+        <div class="form-label">Catégorie</div>
+        <div class="cat-grid" id="cat-grid"></div>
+      </div>
+
+      <div>
+        <div class="form-label">Position GPS</div>
+        <div class="gps-bar" id="gps-bar">
+          <span>&#x1F6F0;</span>
+          <span id="gps-text">Acquisition...</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="form-label">Notes</div>
+        <textarea id="notes-input" placeholder="Contexte, adresse, numéro de train, type de surface..."></textarea>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-secondary" onclick="cancelNew()">Annuler</button>
+        <button class="btn btn-primary" id="btn-save" onclick="saveReport(false)" disabled>Sauver</button>
+        <button class="btn btn-green" id="btn-ai" onclick="saveReport(true)" disabled>&#x2728; Analyser</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DETAIL ═══ -->
+<div id="view-detail" class="view">
+  <div class="header">
+    <button class="icon-btn" onclick="showView('list')">&#x2190;</button>
+    <div class="header-title">Signalement</div>
+    <button class="icon-btn danger" onclick="deleteReport()">&#x1F5D1;</button>
+  </div>
+  <div class="main" id="detail-content"></div>
+</div>
+
+<!-- ═══ SETTINGS ═══ -->
+<div id="view-settings" class="view">
+  <div class="header">
+    <button class="icon-btn" onclick="showView('list')">&#x2190;</button>
+    <div class="header-title">Réglages</div>
+    <div style="width:38px"></div>
+  </div>
+  <div class="main">
+    <div class="privacy-bar">
+      <span style="font-size:15px;flex-shrink:0">&#x1F6E1;</span>
+      <span>100% local. Aucun tracking, cookie ou donnée personnelle. Ta clé API reste sur cet appareil.</span>
+    </div>
+
+    <div id="stats-section"></div>
+
+    <div class="s-card">
+      <h3>&#x1F511; Clé API Anthropic</h3>
+      <p>Pour l'analyse IA. Stockée uniquement dans ce navigateur. Conseil : crée une clé dédiée avec un budget plafonné.</p>
+      <input type="password" id="api-key-input" placeholder="sk-ant-..." oninput="saveApiKey()">
+    </div>
+
+    <div class="s-card">
+      <h3>&#x1F3F7; Catégories & tarifs</h3>
+      <p>Configure les types de support et leur coût de nettoyage au m².</p>
+      <div class="cat-editor" id="cat-editor"></div>
+      <div class="cat-add-btn" onclick="addCategory()" style="margin-top:8px">+ Ajouter une catégorie</div>
+    </div>
+
+    <div class="s-card">
+      <h3>&#x1F4E6; Export / Import</h3>
+      <p>JSON complet (photos incluses en base64).</p>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="exportData()" style="flex:1">&#x2913; Export</button>
+        <button class="btn btn-outline" onclick="document.getElementById('import-input').click()" style="flex:1">&#x2912; Import</button>
+      </div>
+      <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+
+    <div class="s-card danger">
+      <h3>Zone danger</h3>
+      <p>Supprimer toutes les données de cet appareil.</p>
+      <button class="btn btn-danger-outline" onclick="confirmClearAll()" style="width:100%">Tout effacer</button>
+    </div>
+  </div>
+</div>
+
+<!-- overlays -->
+<div class="overlay" id="loading"><div class="spinner"></div><div class="load-text" id="load-text">Analyse en cours...</div></div>
+<div class="toast" id="toast"></div>
+<div class="confirm-ov" id="confirm-ov">
+  <div class="confirm-box">
+    <h3 id="c-title">Confirmer</h3>
+    <p id="c-msg"></p>
+    <div class="confirm-acts">
+      <button class="btn btn-secondary" onclick="closeConfirm()">Annuler</button>
+      <button class="btn btn-primary" id="c-ok" style="background:var(--red)">Confirmer</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// GraffitiMètre v2 — Mobile PWA
+// Zero personal data, 100% local
+// ══════════════════════════════════════════════
+
+const DB_NAME='GraffitiMetreDB',DB_VER=1,STORE='reports';
+let db=null,currentPhoto=null,currentCoords=null,currentReportId=null,selectedCat=null;
+
+// ─── Default categories ───
+const DEFAULT_CATS=[
+  {id:'train',name:'Train',icon:'\u{1F689}',price:110},
+  {id:'batiment',name:'Bâtiment',icon:'\u{1F3E2}',price:85},
+  {id:'mobilier',name:'Mobilier urbain',icon:'\u{1F6CB}',price:70},
+  {id:'mur',name:'Mur / clôture',icon:'\u{1F9F1}',price:60},
+  {id:'autre',name:'Autre',icon:'\u{1F4CC}',price:80},
+];
+
+function getCategories(){
+  try{const s=localStorage.getItem('gm_categories');return s?JSON.parse(s):DEFAULT_CATS;}
+  catch(e){return DEFAULT_CATS;}
+}
+function saveCategories(cats){localStorage.setItem('gm_categories',JSON.stringify(cats))}
+
+// ─── IndexedDB ───
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VER);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE)){const s=d.createObjectStore(STORE,{keyPath:'id'});s.createIndex('timestamp','timestamp',{unique:false})}};r.onsuccess=e=>{db=e.target.result;res(db)};r.onerror=e=>rej(e.target.error)})}
+function dbPut(r){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(r);tx.oncomplete=()=>res();tx.onerror=e=>rej(e.target.error)})}
+function dbGetAll(){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const req=tx.objectStore(STORE).index('timestamp').openCursor(null,'prev');const arr=[];req.onsuccess=e=>{const c=e.target.result;if(c){arr.push(c.value);c.continue()}else res(arr)};req.onerror=e=>rej(e.target.error)})}
+function dbGet(id){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const req=tx.objectStore(STORE).get(id);req.onsuccess=()=>res(req.result);req.onerror=e=>rej(e.target.error)})}
+function dbDel(id){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(id);tx.oncomplete=()=>res();tx.onerror=e=>rej(e.target.error)})}
+function dbClear(){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear();tx.oncomplete=()=>res();tx.onerror=e=>rej(e.target.error)})}
+
+// ─── Navigation ───
+function showView(n){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+n).classList.add('active');
+  if(n==='list')refreshList();
+  if(n==='settings')refreshSettings();
+}
+
+// ─── List ───
+async function refreshList(){
+  const reports=await dbGetAll();
+  const list=document.getElementById('report-list');
+  const empty=document.getElementById('empty-state');
+  if(!reports.length){list.style.display='none';empty.style.display='flex';return}
+  empty.style.display='none';list.style.display='flex';
+
+  const cats=getCategories();
+  const catMap={};cats.forEach(c=>catMap[c.id]=c);
+
+  list.innerHTML=reports.map(r=>{
+    const d=new Date(r.timestamp);
+    const ds=d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    const cat=catMap[r.category]||{name:r.category,icon:'?'};
+    const statusBadge=r.analysis?'<span class="badge badge-ok">Analysé</span>':'<span class="badge badge-wait">En attente</span>';
+    const catBadge=`<span class="badge badge-cat">${cat.icon} ${esc(cat.name)}</span>`;
+    const cost=r.analysis&&r.totalCost?`<div class="rcard-cost">${r.totalCost} €</div>`:'';
+    const notes=r.notes?`<div class="rcard-notes">${esc(r.notes)}</div>`:'';
+    const loc=r.coords?`<div class="rcard-loc">&#x1F4CD; ${r.coords.lat.toFixed(4)}, ${r.coords.lng.toFixed(4)}</div>`:'';
+    return`<div class="rcard" onclick="openReport('${r.id}')">
+      <img class="rcard-img" src="${r.photoThumb||r.photo}" alt="" loading="lazy">
+      <div class="rcard-body">
+        <div class="rcard-top"><span class="rcard-date">${ds}</span>${statusBadge}</div>
+        ${cost}${notes}
+        <div class="rcard-tags">${catBadge}</div>
+        ${loc}
+      </div>
+    </div>`
+  }).join('');
+}
+
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+// ─── New report ───
+function newReport(){
+  currentPhoto=null;currentCoords=null;selectedCat=null;
+  document.getElementById('notes-input').value='';
+  document.getElementById('cam-input').value='';
+  const z=document.getElementById('capture-zone');
+  z.classList.remove('has-photo');
+  z.innerHTML=`<div class="capture-ph"><div class="ci">&#x1F4F7;</div><span>Prendre une photo</span></div>`;
+  document.getElementById('btn-save').disabled=true;
+  document.getElementById('btn-ai').disabled=true;
+  renderCatGrid();
+  showView('new');
+  acquireGPS();
+}
+
+function renderCatGrid(){
+  const cats=getCategories();
+  document.getElementById('cat-grid').innerHTML=cats.map(c=>
+    `<div class="cat-btn${selectedCat===c.id?' selected':''}" onclick="selectCat('${c.id}')">
+      <span class="cat-icon">${c.icon}</span>${esc(c.name)}
+      <div class="cat-price">${c.price} €/m²</div>
+    </div>`
+  ).join('');
+}
+
+function selectCat(id){
+  selectedCat=id;
+  renderCatGrid();
+  checkReady();
+}
+
+function cancelNew(){showView('list')}
+function triggerCam(){document.getElementById('cam-input').click()}
+
+function handlePhoto(e){
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    currentPhoto=ev.target.result;
+    const z=document.getElementById('capture-zone');
+    z.classList.add('has-photo');
+    z.innerHTML=`<img src="${currentPhoto}" alt=""><button class="retake" onclick="event.stopPropagation();triggerCam()">Reprendre</button>`;
+    checkReady();
+  };
+  reader.readAsDataURL(f);
+}
+
+function checkReady(){
+  const ready=currentPhoto&&selectedCat;
+  document.getElementById('btn-save').disabled=!ready;
+  document.getElementById('btn-ai').disabled=!ready;
+}
+
+function acquireGPS(){
+  const gt=document.getElementById('gps-text'),gb=document.getElementById('gps-bar');
+  if(!navigator.geolocation){gt.textContent='GPS non disponible';gb.classList.add('err');return}
+  navigator.geolocation.getCurrentPosition(
+    p=>{currentCoords={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:Math.round(p.coords.accuracy)};gt.textContent=`${currentCoords.lat.toFixed(6)}, ${currentCoords.lng.toFixed(6)} (±${currentCoords.accuracy}m)`;gb.classList.remove('err')},
+    ()=>{gt.textContent='Position non disponible';gb.classList.add('err')},
+    {enableHighAccuracy:true,timeout:15000,maximumAge:30000}
+  );
+}
+
+// ─── Save ───
+async function saveReport(withAI){
+  if(!currentPhoto||!selectedCat)return;
+  const cats=getCategories();
+  const cat=cats.find(c=>c.id===selectedCat)||cats[0];
+
+  const report={
+    id:'r_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+    timestamp:new Date().toISOString(),
+    photo:currentPhoto,
+    photoThumb:await makeThumbnail(currentPhoto,400),
+    coords:currentCoords,
+    notes:document.getElementById('notes-input').value.trim(),
+    category:selectedCat,
+    categoryName:cat.name,
+    pricePerSqm:cat.price,
+    analysis:null,
+    totalCost:null,
+    totalSurface:null
+  };
+
+  if(withAI){
+    const key=localStorage.getItem('gm_apikey');
+    if(!key){toast('Configure ta clé API dans les réglages');return}
+    showLoading('Analyse IA en cours...');
+    try{
+      const result=await analyzeAI(currentPhoto,report.notes,cat,key);
+      report.analysis=result.text;
+      report.totalCost=result.cost;
+      report.totalSurface=result.surface;
+      hideLoading();toast('Analyse terminée !');
+    }catch(err){hideLoading();toast('Erreur : '+err.message)}
+  }
+
+  await dbPut(report);showView('list');if(!withAI)toast('Signalement enregistré');
+}
+
+function makeThumbnail(b64,maxW){
+  return new Promise(res=>{
+    const img=new Image();
+    img.onload=()=>{const r=Math.min(maxW/img.width,maxW/img.height,1);const c=document.createElement('canvas');c.width=img.width*r;c.height=img.height*r;c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.7))};
+    img.src=b64;
+  });
+}
+
+// ─── AI Analysis ───
+async function analyzeAI(photo,notes,cat,apiKey){
+  const match=photo.match(/^data:(image\/\w+);base64,(.+)$/);
+  if(!match)throw new Error('Format photo invalide');
+
+  const systemPrompt=`Tu es un expert en analyse de graffitis et estimation de surfaces dégradées. On te fournit une photo d'un graffiti sur un support de type "${cat.name}".
+
+Le tarif de nettoyage pour cette catégorie est de ${cat.price} €/m².
+
+MÉTHODE :
+1. Identifie chaque graffiti visible sur la photo
+2. Pour chaque graffiti, estime ses dimensions (largeur × hauteur en mètres) en utilisant les éléments de contexte visibles comme repères (portes ~2m de haut, fenêtres ~1.2m, briques ~6.5cm, parpaings ~20cm, hauteur d'homme ~1.75m, etc.)
+3. Calcule la surface englobante (rectangle) et la surface effective (avec facteur de remplissage)
+4. Applique le tarif pour calculer le coût
+
+${cat.id==='train'?`SPÉCIFICITÉS TRAIN :
+- Identifie la série si possible (Zxxxxx)
+- Table de référence hauteurs : Z20xxx=4.32m, Z21xxx=4.218m, Z24xxx/Z26xxx/Z55xxx/Z88xx/Z92xxx=4.32m, Z51xxx=4.295m
+- Utilise la hauteur totale du matériel comme repère principal de calibration
+- Si le numéro est illisible, indique "Numéro illisible"
+`:''}
+FACTEURS DE REMPLISSAGE :
+- Block letters / throw-up rempli : 70-90%
+- Lettrage fin / handstyle : 30-50%
+- Figuratif / personnage : 50-70%
+- Pièce complexe (wildstyle) : 60-80%
+- Pochoir : 40-60%
+
+RÉPONDS EXACTEMENT dans ce format (texte brut, pas de markdown) :
+
+ANALYSE GRAFFITI — [catégorie] — [date du jour]
+${cat.id==='train'?'Matériel : [série ou "Indéterminé"] — Numéro : [numéro ou "Illisible"]\n':''}Nombre de graffitis détectés : [X]
+
+- Graffiti 1
+  - Localisation : [description précise]
+  - Description : [type, couleurs, texte lisible]
+  - Dimensions : [L] x [H] m
+  - Surface englobante : [X.X] m²
+  - Surface effective : [X.X] m² (remplissage [XX]%)
+  - Coût estimé : [X] € (base englobante)
+
+[répéter pour chaque graffiti]
+
+TOTAL
+- Surface englobante totale : [X.X] m²
+- Coût total : [X] € (±15% → [min] € — [max] €)
+- Tarif appliqué : ${cat.price} €/m² (base englobante)
+- Calibration : [éléments de référence utilisés]
+
+Notes : [observations pertinentes]
+
+IMPORTANT : à la toute fin, ajoute une ligne au format exact :
+##DATA:surface=[X.X];cost=[X]##
+avec les totaux englobants pour extraction automatique.`;
+
+  const userMsg=notes
+    ?`Analyse ce graffiti. Notes de l'observateur : "${notes}"`
+    :'Analyse ce graffiti.';
+
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:2000,
+      system:systemPrompt,
+      messages:[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:match[1],data:match[2]}},
+        {type:'text',text:userMsg}
+      ]}]
+    })
+  });
+
+  if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error?.message||`API ${resp.status}`)}
+  const data=await resp.json();
+  const text=data.content.map(c=>c.text||'').join('\n');
+
+  // Extract structured data
+  let cost=null,surface=null;
+  const dm=text.match(/##DATA:surface=([\d.]+);cost=([\d.]+)##/);
+  if(dm){surface=parseFloat(dm[1]);cost=Math.round(parseFloat(dm[2]))}
+
+  // Clean the ##DATA line from display
+  const cleanText=text.replace(/##DATA:.*##/,'').trim();
+
+  return{text:cleanText,cost,surface};
+}
+
+// ─── Detail ───
+async function openReport(id){
+  currentReportId=id;
+  const r=await dbGet(id);if(!r)return;
+  const cats=getCategories();
+  const cat=cats.find(c=>c.id===r.category)||{name:r.categoryName||r.category,icon:'?',price:r.pricePerSqm};
+
+  const d=new Date(r.timestamp);
+  const ds=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' à '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+
+  let h=`<img class="d-photo" src="${r.photo}" alt="">`;
+
+  // Cost hero
+  if(r.totalCost){
+    h+=`<div class="d-section" style="text-align:center;margin-top:14px">
+      <div class="d-cost-big">${r.totalCost} €</div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--text3)">${r.totalSurface?r.totalSurface+' m² — ':''} ${r.pricePerSqm} €/m²</div>
+    </div>`;
+  }
+
+  h+=`<div class="d-section"><div class="d-title">&#x1F4C5; Infos</div>
+    <div class="d-block"><strong>${ds}</strong><br>Catégorie : ${cat.icon} ${esc(cat.name)} (${r.pricePerSqm} €/m²)</div></div>`;
+
+  if(r.coords){
+    h+=`<div class="d-section"><div class="d-title">&#x1F4CD; Position</div>
+      <div class="d-block d-mono">Lat: ${r.coords.lat.toFixed(6)}\nLng: ${r.coords.lng.toFixed(6)}\nPrécision: ±${r.coords.accuracy}m\n\n<a href="https://www.openstreetmap.org/?mlat=${r.coords.lat}&mlon=${r.coords.lng}#map=18/${r.coords.lat}/${r.coords.lng}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;font-family:var(--sans)">&#x1F5FA; Voir sur la carte</a></div></div>`;
+  }
+
+  if(r.notes){h+=`<div class="d-section"><div class="d-title">&#x270D; Notes</div><div class="d-block">${esc(r.notes)}</div></div>`}
+
+  if(r.analysis){
+    h+=`<div class="d-section"><div class="d-title">&#x2728; Analyse IA</div><div class="d-analysis">${fmtAnalysis(r.analysis)}</div></div>`;
+  }
+
+  h+=`<div class="d-actions">`;
+  if(!r.analysis){h+=`<button class="btn btn-green" onclick="reanalyze('${r.id}')">&#x2728; Lancer l'analyse</button>`}
+  else{h+=`<button class="btn btn-outline" onclick="reanalyze('${r.id}')">&#x1F504; Réanalyser</button>`}
+  h+=`</div>`;
+
+  document.getElementById('detail-content').innerHTML=h;
+  showView('detail');
+}
+
+function fmtAnalysis(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--text)">$1</strong>').replace(/\n/g,'<br>')}
+
+async function reanalyze(id){
+  const key=localStorage.getItem('gm_apikey');
+  if(!key){toast('Configure ta clé API');return}
+  const r=await dbGet(id);if(!r)return;
+  const cats=getCategories();
+  const cat=cats.find(c=>c.id===r.category)||{name:r.categoryName,price:r.pricePerSqm,id:r.category};
+  showLoading('Réanalyse...');
+  try{
+    const result=await analyzeAI(r.photo,r.notes,cat,key);
+    r.analysis=result.text;r.totalCost=result.cost;r.totalSurface=result.surface;
+    await dbPut(r);hideLoading();toast('Analyse mise à jour');openReport(id);
+  }catch(err){hideLoading();toast('Erreur : '+err.message)}
+}
+
+async function deleteReport(){
+  if(!currentReportId)return;
+  showConfirm('Supprimer ?','Action irréversible.',async()=>{await dbDel(currentReportId);currentReportId=null;showView('list');toast('Supprimé')});
+}
+
+// ─── Settings ───
+function refreshSettings(){
+  const key=localStorage.getItem('gm_apikey')||'';
+  document.getElementById('api-key-input').value=key;
+  renderCatEditor();
+  dbGetAll().then(reports=>{
+    const analyzed=reports.filter(r=>r.analysis).length;
+    const totalCost=reports.reduce((s,r)=>s+(r.totalCost||0),0);
+    document.getElementById('stats-section').innerHTML=`<div class="stats-row">
+      <div class="stat"><div class="stat-v">${reports.length}</div><div class="stat-l">Signalements</div></div>
+      <div class="stat"><div class="stat-v">${analyzed}</div><div class="stat-l">Analysés</div></div>
+      <div class="stat"><div class="stat-v">${totalCost?totalCost.toLocaleString('fr-FR'):'-'}</div><div class="stat-l">Coût total €</div></div>
+    </div>`;
+  });
+}
+
+function renderCatEditor(){
+  const cats=getCategories();
+  document.getElementById('cat-editor').innerHTML=cats.map((c,i)=>
+    `<div class="cat-row">
+      <input type="text" class="cat-icon-input" value="${c.icon}" onchange="updateCat(${i},'icon',this.value)" maxlength="4">
+      <input type="text" value="${esc(c.name)}" onchange="updateCat(${i},'name',this.value)" placeholder="Nom">
+      <input type="number" class="cat-price-input" value="${c.price}" onchange="updateCat(${i},'price',+this.value)" min="0" step="5" placeholder="€/m²">
+      <button class="cat-del" onclick="removeCat(${i})">&#x2715;</button>
+    </div>`
+  ).join('');
+}
+
+function updateCat(i,field,val){const cats=getCategories();if(cats[i]){cats[i][field]=val;saveCategories(cats);renderCatEditor()}}
+function removeCat(i){const cats=getCategories();if(cats.length<=1){toast('Il faut au moins une catégorie');return}cats.splice(i,1);saveCategories(cats);renderCatEditor()}
+function addCategory(){const cats=getCategories();cats.push({id:'cat_'+Date.now(),name:'Nouvelle',icon:'&#x1F3F7;',price:80});saveCategories(cats);renderCatEditor()}
+
+function saveApiKey(){const k=document.getElementById('api-key-input').value.trim();if(k)localStorage.setItem('gm_apikey',k);else localStorage.removeItem('gm_apikey')}
+
+// ─── Export / Import ───
+async function exportData(){
+  const reports=await dbGetAll();
+  if(!reports.length){toast('Rien à exporter');return}
+  const data={app:'GraffitiMetre',version:'2.0',exportDate:new Date().toISOString(),categories:getCategories(),count:reports.length,reports:reports.map(({photoThumb,...r})=>r)};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`graffitimetre_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);
+  toast(`${reports.length} signalement(s) exporté(s)`);
+}
+
+async function importData(e){
+  const f=e.target.files[0];if(!f)return;
+  try{
+    const txt=await f.text();const data=JSON.parse(txt);
+    if(!data.app||!Array.isArray(data.reports))throw new Error('Format invalide');
+    // Import categories if present
+    if(data.categories){saveCategories(data.categories)}
+    let n=0;
+    for(const r of data.reports){if(r.id&&r.timestamp&&r.photo){r.photoThumb=await makeThumbnail(r.photo,400);await dbPut(r);n++}}
+    toast(`${n} signalement(s) importé(s)`);refreshSettings();
+  }catch(err){toast('Erreur : '+err.message)}
+  e.target.value='';
+}
+
+function confirmClearAll(){showConfirm('Tout effacer ?','Signalements, clé API et catégories personnalisées seront supprimés.',async()=>{await dbClear();localStorage.removeItem('gm_apikey');localStorage.removeItem('gm_categories');refreshSettings();toast('Données effacées')})}
+
+// ─── UI ───
+function showLoading(t){document.getElementById('load-text').textContent=t;document.getElementById('loading').classList.add('active')}
+function hideLoading(){document.getElementById('loading').classList.remove('active')}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
+function showConfirm(title,msg,onOk){document.getElementById('c-title').textContent=title;document.getElementById('c-msg').textContent=msg;document.getElementById('c-ok').onclick=()=>{closeConfirm();onOk()};document.getElementById('confirm-ov').classList.add('active')}
+function closeConfirm(){document.getElementById('confirm-ov').classList.remove('active')}
+
+// ─── Init ───
+openDB().then(()=>refreshList()).catch(err=>{console.error(err);toast('Erreur DB')});
+</script>
+</body>
+</html>
