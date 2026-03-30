@@ -518,8 +518,31 @@ function makeThumbnail(b64,maxW){
   });
 }
 
+function compressForAPI(b64,maxBytes=1*1024*1024){
+  return new Promise(res=>{
+    const img=new Image();
+    img.onload=()=>{
+      const maxDim=1600;
+      let w=img.width,h=img.height;
+      if(w>maxDim||h>maxDim){const r=Math.min(maxDim/w,maxDim/h);w=Math.round(w*r);h=Math.round(h*r)}
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      let q=0.85,result;
+      do{
+        result=c.toDataURL('image/jpeg',q);
+        const bytes=(result.length-result.indexOf(',')-1)*0.75;
+        if(bytes<=maxBytes||q<=0.3)break;
+        q=Math.round((q-0.1)*10)/10;
+      }while(true);
+      res(result);
+    };
+    img.src=b64;
+  });
+}
+
 // ─── AI Analysis ───
 async function analyzeAI(photo,notes,cat,apiKey){
+  photo=await compressForAPI(photo);
   const match=photo.match(/^data:(image\/\w+);base64,(.+)$/);
   if(!match)throw new Error('Format photo invalide');
 
