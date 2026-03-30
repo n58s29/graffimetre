@@ -108,6 +108,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .capture-ph .ci{font-size:40px}
 .capture-ph span{font-size:13px;font-weight:500}
 .retake{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);color:#fff;border:none;padding:5px 10px;border-radius:8px;font-size:11px;font-family:var(--sans);cursor:pointer}
+.capture-btns{display:flex;gap:12px;justify-content:center}
+.capture-btn{display:flex;flex-direction:column;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.2);color:#fff;border-radius:14px;padding:18px 28px;font-size:13px;font-family:var(--sans);cursor:pointer}
+.capture-btn span{font-size:28px}
 
 .form-section{margin-top:14px;display:flex;flex-direction:column;gap:12px;padding-bottom:100px}
 
@@ -229,13 +232,16 @@ input::placeholder{color:var(--text3)}
     <div style="width:38px"></div>
   </div>
   <div class="main">
-    <div class="capture-zone" id="capture-zone" onclick="triggerCam()">
+    <div class="capture-zone" id="capture-zone">
       <div class="capture-ph" id="capture-ph">
-        <div class="ci">&#x1F4F7;</div>
-        <span>Prendre une photo</span>
+        <div class="capture-btns">
+          <button class="capture-btn" onclick="triggerCam()"><span>&#x1F4F7;</span>Appareil photo</button>
+          <button class="capture-btn" onclick="triggerGallery()"><span>&#x1F5BC;</span>Galerie</button>
+        </div>
       </div>
     </div>
-    <input type="file" id="cam-input" accept="image/*" style="display:none" onchange="handlePhoto(event)">
+    <input type="file" id="cam-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+    <input type="file" id="gallery-input" accept="image/*" style="display:none" onchange="handlePhoto(event)">
 
     <div class="form-section">
       <div>
@@ -415,9 +421,8 @@ function newReport(){
   currentPhoto=null;currentCoords=null;selectedCat=null;
   document.getElementById('notes-input').value='';
   document.getElementById('cam-input').value='';
-  const z=document.getElementById('capture-zone');
-  z.classList.remove('has-photo');
-  z.innerHTML=`<div class="capture-ph"><div class="ci">&#x1F4F7;</div><span>Prendre une photo</span></div>`;
+  document.getElementById('gallery-input').value='';
+  resetCapture();
   document.getElementById('btn-save').disabled=true;
   document.getElementById('btn-ai').disabled=true;
   renderCatGrid();
@@ -443,6 +448,13 @@ function selectCat(id){
 
 function cancelNew(){showView('list')}
 function triggerCam(){document.getElementById('cam-input').click()}
+function triggerGallery(){document.getElementById('gallery-input').click()}
+
+function resetCapture(){
+  const z=document.getElementById('capture-zone');
+  z.classList.remove('has-photo');
+  z.innerHTML=`<div class="capture-ph" id="capture-ph"><div class="capture-btns"><button class="capture-btn" onclick="triggerCam()"><span>&#x1F4F7;</span>Appareil photo</button><button class="capture-btn" onclick="triggerGallery()"><span>&#x1F5BC;</span>Galerie</button></div></div>`;
+}
 
 function handlePhoto(e){
   const f=e.target.files[0];if(!f)return;
@@ -451,7 +463,7 @@ function handlePhoto(e){
     currentPhoto=ev.target.result;
     const z=document.getElementById('capture-zone');
     z.classList.add('has-photo');
-    z.innerHTML=`<img src="${currentPhoto}" alt=""><button class="retake" onclick="event.stopPropagation();triggerCam()">Reprendre</button>`;
+    z.innerHTML=`<img src="${currentPhoto}" alt=""><button class="retake" onclick="event.stopPropagation();resetCapture()">Reprendre</button>`;
     checkReady();
   };
   reader.readAsDataURL(f);
